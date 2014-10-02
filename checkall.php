@@ -19,6 +19,7 @@ $allmods = $db->query('select * from `modules`')->fetchAll();
 
 $goodmods = 0;
 $badmods = 0;
+$othermods = 0;
 
 foreach ($allmods as $modarr) {
 	$mod = $modarr['modulename'];
@@ -30,6 +31,7 @@ foreach ($allmods as $modarr) {
 	$sig = $c->get('AMPWEBROOT')."/admin/modules/$mod/module.sig";
 	if (!file_exists($sig)) {
 		print "UNSIGNED MODULE $mod: This module isn't signed. It may be altered, and should be re-downloaded immediately.\n";
+		$othermods++;
 		if ($mod == "framework") {
 			print "Criticial module unsigned, can't proceed. Sorry. Please upgrade manually\n";
 			exit(-1);
@@ -48,11 +50,16 @@ foreach ($allmods as $modarr) {
 		exit(-1);
 	}
 	$sig = $gpg->verifyModule($mod);
-	if ($sig['status'] == GPG::STATE_TRUSTED & GPG::STATE_GOOD) {
+	if ($sig['status'] == 129) {
 		$goodmods++;
 	} else {
 		print "WARNING: Module $mod has issues. Run script again with that module name as the param\n";
+		$badmods++;
 	}
 
 }
+
+print "Complete. Summary:\n\tGood modules: $goodmods\n\tBad modules: $badmods\n\tSignature Missing: $othermods\n";
+print "Re-run this script with any module name for further information\n";
+exit;
 
