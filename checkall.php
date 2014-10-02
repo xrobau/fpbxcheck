@@ -1,8 +1,6 @@
 <?php
 
 echo "Starting integrity check...\n";
-include 'GPG.class.php';
-include 'GetConf.class.php';
 
 $c = new GetConf();
 
@@ -20,6 +18,20 @@ $allmods = $db->query('select * from `modules`')->fetchAll();
 $goodmods = 0;
 $badmods = 0;
 $othermods = 0;
+
+print "Checking framework...";
+$sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
+if (!file_exists($sig)) {
+	print "ERROR! Framework isn't signed. Can't continue.\n";
+	exit(-1);
+}
+if (!$gpg->verifyFile($sig)) {
+	print "ERROR! Framework signature file altered.\n\tYOU MAY HAVE BEEN HACKED.\n";
+	exit(-1);
+}
+
+$out = $gpg->checkSig($sig);
+checkFramework($out['hashes']);
 
 foreach ($allmods as $modarr) {
 	$mod = $modarr['modulename'];
@@ -39,8 +51,8 @@ foreach ($allmods as $modarr) {
 		continue;
 	}
 
-	// Now, we're checking a module. Skip framework for the moment.
-	if ($mod == "framework") {
+	// Now, we're checking a module. Skip the two annoying ones.
+	if ($mod == "framework" || $mod == "fw_ari") {
 		continue;
 	}
 	if (!$gpg->verifyFile($sig)) {

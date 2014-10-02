@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-$files = array("loader.php", "moddetails.php", "checkall.php", "GPG.class.php", "GetConf.class.php");
+$files = array("loader.php", "moddetails.php", "checkall.php", "GPG.class.php", "GetConf.class.php", "checkframework.php");
 
 $files[] = "86CE877469D2EAD9.key";
 $files[] = "9F9169F4B33B4659.key";

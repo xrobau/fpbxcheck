@@ -2,8 +2,6 @@
 
 $mod = $argv[1];
 echo "Checking module $mod...\n";
-include 'GPG.class.php';
-include 'GetConf.class.php';
 $c = new GetConf();
 $gpg = new GPG($c);
 $gpg->trustFreePBX();
