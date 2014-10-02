@@ -41,8 +41,15 @@ foreach ($allmods as $modarr) {
 		exit(-1);
 	}
 	$sig = $c->get('AMPWEBROOT')."/admin/modules/$mod/module.sig";
+	if (!file_exists($sig) && $redownload) {
+		print "UNSIGNED MODULE $mod -- attempting to redownload\n";
+		system("amportal a ma download $mod");
+		system("amportal a ma install $mod");
+	}
 	if (!file_exists($sig)) {
 		print "UNSIGNED MODULE $mod: This module isn't signed. It may be altered, and should be re-downloaded immediately.\n";
+		print "You may add the paramater --redownload to automatically download all unsigned modules\n";
+
 		$othermods++;
 		if ($mod == "framework") {
 			print "Criticial module unsigned, can't proceed. Sorry. Please upgrade manually\n";
