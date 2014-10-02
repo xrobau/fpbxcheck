@@ -45,6 +45,13 @@ class GPG {
 	public $timeout = 3;
 
 
+	public function __construct($c = false) {
+		if (!$c) {
+			throw new \Exception("I need to be given a GetConf object. Hack as part of fpbxcheck");
+		}
+		$this->c = $c;
+	}
+
 	/**
 	 * Validate a file using WoT
 	 * @param string $file Filename (explicit or relative path)
@@ -111,7 +118,7 @@ class GPG {
 		}
 
 		// Get the module.sig file.
-		$file = FreePBX::Config()->get_conf_setting('AMPWEBROOT')."/admin/modules/$module/module.sig";
+		$file = $this->c->get('AMPWEBROOT')."/admin/modules/$module/module.sig";
 
 		if (!file_exists($file)) {
 			// Well. That was easy.
@@ -307,7 +314,7 @@ class GPG {
 			$fds[0] = $stdin;
 		}
 
-		$webuser = FreePBX::Freepbx_conf()->get('AMPASTERISKWEBUSER');
+		$webuser = $this->c->get('AMPASTERISKWEBUSER');
 		$home = $this->getGpgLocation();
 
 		// We need to ensure that our environment variables are sane.
@@ -493,7 +500,7 @@ class GPG {
 
 	public function getGpgLocation() {
 		// Re #7429 - Always use the AMPASTERISKWEBUSER homedir for gpg
-		$webuser = FreePBX::Freepbx_conf()->get('AMPASTERISKWEBUSER');
+		$webuser = $this->c->get('AMPASTERISKWEBUSER');
 
 		if (!$webuser) {
 			throw new Exception(_("I don't know who I should be running GPG as."));
@@ -508,7 +515,7 @@ class GPG {
 		if (!is_dir($home)) {
 			// Well, that's handy. It doesn't exist. Let's use ASTSPOOLDIR instead, because
 			// that should exist and be writable.
-			$home = FreePBX::Freepbx_conf()->get('ASTSPOOLDIR');
+			$home = $this->c->get('ASTSPOOLDIR');
 			if (!is_dir($home)) {
 				// OK, I give up.
 				throw new Exception(sprintf(_("Asterisk home dir (%S) doesn't exist, and, ASTSPOOLDIR doesn't exist. Aborting"),$home));
@@ -563,7 +570,7 @@ class GPG {
 		}
 
 		// Now, who should be running gpg normally?
-		$freepbxuser = FreePBX::Freepbx_conf()->get('AMPASTERISKWEBUSER');
+		$freepbxuser = $this->c->get('AMPASTERISKWEBUSER');
 		$pwent = posix_getpwnam($freepbxuser);
 		$uid = $pwent['uid'];
 		$gid = $pwent['gid'];
