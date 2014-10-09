@@ -29,6 +29,7 @@ if (!$gpg->verifyFile($sig)) {
 	print "ERROR! Framework signature file altered.\n\tYOU MAY HAVE BEEN HACKED.\n";
 	exit(-1);
 }
+print "OK\n";
 
 $out = $gpg->checkSig($sig);
 checkFramework($out['hashes']);

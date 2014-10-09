@@ -342,11 +342,11 @@ class GPG {
 			throw new RuntimeException(sprintf(_("gpg took too long to run the command: %s"),$cmd));
 		}
 
+		$retarr['stdout'] = stream_get_contents($pipes[1]);
+		$retarr['stderr'] = stream_get_contents($pipes[2]);
 		$status = explode("\n", stream_get_contents($pipes[3]));
 		array_pop($status);  // Remove trailing blank line
 		$retarr['status'] = $status;
-		$retarr['stdout'] = stream_get_contents($pipes[1]);
-		$retarr['stderr'] = stream_get_contents($pipes[2]);
 		$exitcode = proc_close($proc);
 		$retarr['exitcode'] = $exitcode;
 
