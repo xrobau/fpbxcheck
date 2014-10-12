@@ -84,6 +84,7 @@ class GPG {
 			// by the FreePBX Key, or, by a key that's been signed by the FreePBX Key.
 			// This is going above-and-beyond the web of trust thing, and we may end up
 			// removing it.
+			array_pop($out['status']);
 			$validline = explode(" ", array_pop($out['status']));
 			$thissig = $validline[2];
 			$longkey = substr($this->freepbxkey, -16);
