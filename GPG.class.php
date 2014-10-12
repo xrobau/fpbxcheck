@@ -91,6 +91,9 @@ class GPG {
 			$allsigs = $this->runGPG("--keyid-format long --with-colons --check-sigs $thissig");
 			$isvalid = false;
 			foreach (explode("\n", $allsigs['stdout']) as $line) {
+				if (!$line) {
+					continue;
+				}
 				$tmparr = explode(":", $line);
 				if ($tmparr[4] == $longkey) {
 					$isvalid = true;
