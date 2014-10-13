@@ -27,6 +27,7 @@ if (!file_exists($quarantine)) {
 
 print "Attempting to upgrade Framework\n";
 system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
+print "Finished upgrading Framework!!\n";
 
 print "Now Checking Framework...\n";
 $sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
@@ -39,42 +40,47 @@ if (!$gpg->verifyFile($sig)) {
 	exit(-1);
 }
 
-print "Cleaning up exploit 'mgknight'\n";
-$redownload = true;
-if (file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
+if(!$clean && file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
 	$exploited = true;
-	print "Removing invalid bootstrap file\n";
-	unlink($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php");
+	print "*** Exploit 'mgknight' Detected, Please run with the --clean option! *** \n";
+}
+
+if($clean) {
+	print "Cleaning up exploit 'mgknight'\n";
+	if (file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
+		$redownload = true;
+		print "Removing invalid bootstrap file\n";
+		unlink($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php");
+	}
+
 	$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
 	$db->query($sql);
-	print "Deleting mgknight user\n";
-}
-$files = array("manager_custom.conf", "sip_custom.conf","extensions_custom.conf");
-foreach($files as $file) {
-	if(file_exists($c->get('ASTETCDIR')."/".$file)) {
-		$exploited = true;
-		print "Moving potentially compromised file ".$c->get('ASTETCDIR')."/".$file." to ".$quarantine."/".$file."\n";
-		copy($c->get('ASTETCDIR')."/".$file,$quarantine."/".$file);
-		unlink($c->get('ASTETCDIR')."/".$file);
-		touch($c->get('ASTETCDIR')."/".$file);
+	print "Deleting 'mgknight' user, if exists..\n";
+
+	$files = array("manager_custom.conf", "sip_custom.conf","extensions_custom.conf");
+	foreach($files as $file) {
+		if(file_exists($c->get('ASTETCDIR')."/".$file)) {
+			$exploited = true;
+			print "Moving potentially compromised file ".$c->get('ASTETCDIR')."/".$file." to ".$quarantine."/".$file."\n";
+			copy($c->get('ASTETCDIR')."/".$file,$quarantine."/".$file);
+			unlink($c->get('ASTETCDIR')."/".$file);
+			touch($c->get('ASTETCDIR')."/".$file);
+		}
 	}
+	print "Cleaned potential 'mgknight' exploit. Please check your system for any suspicious activity. This script might not have removed it all!\n";
 }
-print "Cleaned potential exploit. Please check your system for any suspicious activity. This script might not have removed it all!\n";
 
-
-print "OK\n";
-
-//select * from modules where modulename = 'ucp' and enabled = 1;
 $fw_ari_path = $c->get('AMPWEBROOT')."/recordings/includes";
 if(file_exists($fw_ari_path)) {
-				exec("grep -R 'unserialize' ".$fw_ari_path, $o, $r);
-				if(empty($r)) {
-								print "*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***\n";
-								if($clean) {
+	exec("grep -R 'unserialize' ".$fw_ari_path, $o, $r);
+	if(empty($r)) {
+		print "*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***\n";
+		if($clean) {
 			print "ARI IS VULNERABLE, MOVIING TO ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari\n";
-												system("cp -R ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari");
-								}
-				}
+			system("cp -R ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari");
+			system("rm -Rf ".$c->get('AMPWEBROOT')."/recordings/*");
+		}
+	}
 }
 $fw_ari = $db->query("SELECT * FROM modules WHERE modulename = 'fw_ari' and enabled = 1")->fetchAll();
 if(!empty($fw_ari)) {
@@ -109,9 +115,9 @@ foreach ($allmods as $modarr) {
 				if(file_exists(sys_get_temp_dir()."/c2.pl")) {
 					unlink(sys_get_temp_dir()."/c2.pl");
 				}
-																if(file_exists(sys_get_temp_dir()."/c.sh")) {
-																				unlink(sys_get_temp_dir()."/c.sh");
-																}
+				if(file_exists(sys_get_temp_dir()."/c.sh")) {
+					unlink(sys_get_temp_dir()."/c.sh");
+				}
 			}
 		}
 	}
