@@ -1,10 +1,11 @@
 <?php
 
-function checkFramework($hashes) {
-	$webroot = "/var/www/html";
-	$agidir = "/var/lib/asterisk/agi-bin";
-	$sbindir = "/usr/local/sbin";
-	$bindir = "/var/lib/asterisk/bin";
+function checkFramework($hashes, $c) {
+	$webroot = $c->get('AMPWEBROOT');
+	$agidir = $c->get('ASTAGIDIR');
+	$sbindir = $c->get('AMPSBIN');
+	$bindir = $c->get('AMPBIN');
+	$status = true;
 
 	foreach ($hashes as $file => $hash) {
 		if (substr($file,0,9) == "upgrades/" || substr($file,0,16) == "amp_conf/astetc/" || substr($file,0,16) == "amp_conf/sounds/" ||
@@ -12,40 +13,61 @@ function checkFramework($hashes) {
 			continue;
 		}
 		if (substr($file,0,17) == "amp_conf/agi-bin/") {
-			validate("$agidir/".substr($file,17), $hash);
+			$s = validate("$agidir/".substr($file,17), $hash);
+			if(!$s) {
+				print "$agidir/".substr($file,17)." has been modified!\n";
+				$status = false;
+			}
 			continue;
 		}
 		if (substr($file,0,14) == "amp_conf/sbin/") {
-			validate("$sbindir/".substr($file,14), $hash);
+			$s = validate("$sbindir/".substr($file,14), $hash);
+			if(!$s) {
+				print "$sbindir/".substr($file,14)." has been modified!\n";
+				$status = false;
+			}
 			continue;
 		}
 		if (substr($file,0,13) == "amp_conf/bin/") {
-			validate("$bindir/".substr($file,13), $hash);
+			if($file != "amp_conf/bin/amportal") {
+				$s = validate("$bindir/".substr($file,13), $hash);
+				if(!$s) {
+					print "$bindir/".substr($file,13)." has been modified!\n";
+					$status = false;
+				}
+			}
 			continue;
 		}
 		if (substr($file,0,16) == "amp_conf/htdocs/") {
-			validate("$webroot/".substr($file,16), $hash);
+			$s = validate("$webroot/".substr($file,16), $hash);
+			if(!$s) {
+				print "$webroot/".substr($file,16)." has been modified!\n";
+				$status = false;
+			}
 			continue;
 		}
 
 		if (strpos($file, "/") === false || substr($file,0,4) == "SQL/") {
 			// Part of the root of the module
-			validate("$webroot/admin/modules/framework/$file", $hash);
+			$s = validate("$webroot/admin/modules/framework/$file", $hash);
+			if(!$s) {
+				print "$webroot/admin/modules/framework/$file has been modified!\n";
+				$status = false;
+			}
 			continue;
 		}
-		print "doing $file\n";
-		exit;
 	}
+	return $status;
 }
 
 function validate($file, $hash) {
 	if (!file_exists($file)) {
-		if($file != "/var/lib/asterisk/bin/amportal") {
-			print "File ($file) is missing!\n";
-		}
+		print "*** File ($file) is missing! ****\n";
 		return false;
 	}
 	if (hash_file('sha256', $file) != $hash) {
-		print "Mismatch on $file\n";
+		print "*** Mismatch on $file ****\n";
+		return false;
 	}
+	return true;
 }

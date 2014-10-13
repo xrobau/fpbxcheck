@@ -7,6 +7,27 @@ $gpg = new GPG($c);
 $gpg->trustFreePBX();
 // Steal GetConf's DB connection
 $db = $c->db;
+if($mod == "framework") {
+	$sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
+	$out = $gpg->checkSig($sig);
+	print "Now Verifying all FreePBX Framework Files\n";
+	$status = checkFramework($out['hashes'],$c);
+	$sig = $gpg->verifyModule($mod);
+	if($status) {
+		print "Signature Good!\n";
+	} else {
+		print "Signature ERROR!\n";
+	}
+	if ($sig['status']&GPG::STATE_TRUSTED) {
+		print "GPG Trust OK\n";
+	} else {
+		print "GPG Trust FAILURE!\n";
+	}
+	die();
+}
+if($mod == "fw_ari") {
+	die("Unsupported");
+}
 $sig = $c->get('AMPWEBROOT')."/admin/modules/$mod/module.sig";
 if (!file_exists($sig)) {
 	print "UNSIGNED MODULE $mod: This module isn't signed. It may be altered, and should be re-downloaded immediately.\n";

@@ -25,19 +25,29 @@ if (!file_exists($quarantine)) {
 	mkdir($quarantine);
 }
 
-print "Attempting to upgrade Framework\n";
-system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-print "Finished upgrading Framework!!\n";
-
-print "Now Checking Framework...\n";
+print "Checking Framework for a valid signature...\n";
 $sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
 if (!file_exists($sig)) {
-	print "ERROR! Framework isn't signed. Can't continue.\n";
-	exit(-1);
+	print "Framework is missing it's sig file, Attempting to upgrade Framework\n";
+	system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
+	print "Finished upgrading Framework!! Checking for signature again\n";
+	if (!file_exists($sig)) {
+		print "ERROR! Framework isn't signed. Can't continue.\n";
+		exit(-1);
+	}
 }
 if (!$gpg->verifyFile($sig)) {
 	print "ERROR! Framework signature file altered.\n\tYOU MAY HAVE BEEN HACKED.\n";
-	exit(-1);
+	if($clean) {
+		print "Framework has been tampered with, upgrading Framework\n";
+		system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
+		print "Finished upgrading Framework!!\n";
+	} else {
+		print "Please run with the --clean command\n";
+		exit(-1);
+	}
+} else {
+	print "Framework appears to be good\n";
 }
 
 if(!$clean && file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
@@ -49,19 +59,18 @@ if($clean) {
 	print "Cleaning up exploit 'mgknight'\n";
 	if (file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
 		$redownload = true;
-		$exploited = true;
-		print "Removing invalid bootstrap file\n";
+		print "\tRemoving invalid bootstrap file\n";
 		unlink($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php");
 	}
 
 	$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
 	$db->query($sql);
-	print "Deleting 'mgknight' user, if exists..\n";
+	print "\tDeleting 'mgknight' user, if exists..\n";
 
 	$files = array("manager_custom.conf", "sip_custom.conf","extensions_custom.conf");
 	foreach($files as $file) {
 		if(file_exists($c->get('ASTETCDIR')."/".$file)) {
-			print "Moving potentially compromised file ".$c->get('ASTETCDIR')."/".$file." to ".$quarantine."/".$file."\n";
+			print "\tMoving potentially compromised file ".$c->get('ASTETCDIR')."/".$file." to ".$quarantine."/".$file."\n";
 			copy($c->get('ASTETCDIR')."/".$file,$quarantine."/".$file);
 			unlink($c->get('ASTETCDIR')."/".$file);
 			touch($c->get('ASTETCDIR')."/".$file);
@@ -70,13 +79,14 @@ if($clean) {
 	print "Cleaned potential 'mgknight' exploit. Please check your system for any suspicious activity. This script might not have removed it all!\n";
 }
 
+print "Checking FreePBX ARI Framework\n";
 $fw_ari_path = $c->get('AMPWEBROOT')."/recordings/includes";
 if(file_exists($fw_ari_path)) {
 	exec("grep -R 'unserialize' ".$fw_ari_path, $o, $r);
 	if(empty($r)) {
-		print "*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***\n";
+		print "\t*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***\n";
 		if($clean) {
-			print "ARI IS VULNERABLE, MOVIING TO ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari\n";
+			print "\tARI IS VULNERABLE, MOVIING TO ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari\n";
 			system("cp -R ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari");
 			system("rm -Rf ".$c->get('AMPWEBROOT')."/recordings/*");
 		}
@@ -84,29 +94,45 @@ if(file_exists($fw_ari_path)) {
 }
 $fw_ari = $db->query("SELECT * FROM modules WHERE modulename = 'fw_ari' and enabled = 1")->fetchAll();
 if(!empty($fw_ari)) {
-	print "FreePBX ARI Framework detected as installed, attempting to update\n";
+	print "\tFreePBX ARI Framework detected as installed, attempting to update\n";
 	system($c->get('AMPBIN')."/module_admin -f --no-warnings update fw_ari");
 } else {
 	//ari is disabled but check and remove the directory as well
 	if(file_exists($c->get('AMPWEBROOT')."/recordings/index.php")) {
 		$contents = file_get_contents($c->get('AMPWEBROOT')."/recordings/index.php");
 		if(!preg_match("/Location:(.*)ucp/i",$contents)) {
-			print "FreePBX ARI Framework is uninstalled but the folder exists, removing it\n";
+			print "\tFreePBX ARI Framework is uninstalled but the folder exists, removing it\n";
 			system("rm -Rf ".$c->get('AMPWEBROOT')."/recordings");
 		}
 	}
 }
+print "Finished with FreePBX ARI Framework\n";
 
 $out = $gpg->checkSig($sig);
-checkFramework($out['hashes']);
+print "Now Verifying all FreePBX Framework Files\n";
+$status = checkFramework($out['hashes'],$c);
+if(!$status && $clean) {
+	print "Framework has been tampered with, upgrading Framework\n";
+	system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
+	print "Finished upgrading Framework!!\n";
+} elseif(!$status && !$clean) {
+	print "Framework has been tampered with\n";
+	print "Please run with the --clean command\n";
+	exit(-1);
+
+}
+print "Checked all FreePBX Framework Files\n";
+
+print "Now checking all modules\n";
 
 foreach ($allmods as $modarr) {
 	$mod = $modarr['modulename'];
 	if ($mod == 'admindashboard') {
-		print "*** YOU MAY HAVE BEEN HACKED ***\n";
-		print "The known-bad module 'admindashboard' is present on this machine\n";
+		print "\t*** YOU MAY HAVE BEEN HACKED ***\n";
+		print "\tThe known-bad module 'admindashboard' is present on this machine\n";
 		$exploited = true;
 		if(!$clean) {
+			print "Please run with the --clean command\n";
 			exit(-1);
 		} else {
 			if(file_exists($c->get('AMPWEBROOT')."/admin/modules/admindashboard")) {
@@ -162,5 +188,5 @@ print "Complete. Summary:\n\tGood modules: $goodmods\n\tBad modules: $badmods\n\
 if($exploited) {
 	print "**** SYSTEM WAS EXPLOITED ****\n";
 }
-print "Re-run this script with any module name for further information\n";
+print "Re-run this script with -m <rawmodname> for further information\nExample: -m ucp\n";
 exit;
