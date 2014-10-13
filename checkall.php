@@ -68,6 +68,17 @@ if (file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
 print "OK\n";
 
 //select * from modules where modulename = 'ucp' and enabled = 1;
+$fw_ari_path = $c->get('AMPWEBROOT')."/recordings/includes";
+if(file_exists($fw_ari_path)) {
+        exec("grep -R 'unserialize' ".$fw_ari_path, $o, $r);
+        if(empty($r)) {
+                print "*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***\n";
+                if($clean) {
+			print "ARI IS VULNERABLE, MOVIING TO ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari\n";
+                        system("cp -R ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari");
+                }
+        }
+}
 $fw_ari = $db->query("SELECT * FROM modules WHERE modulename = 'fw_ari' and enabled = 1")->fetchAll();
 if(!empty($fw_ari)) {
 	print "FreePBX ARI Framework detected as installed, attempting to update\n";
