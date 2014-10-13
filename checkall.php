@@ -49,6 +49,7 @@ if($clean) {
 	print "Cleaning up exploit 'mgknight'\n";
 	if (file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
 		$redownload = true;
+		$exploited = true;
 		print "Removing invalid bootstrap file\n";
 		unlink($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php");
 	}
@@ -60,7 +61,6 @@ if($clean) {
 	$files = array("manager_custom.conf", "sip_custom.conf","extensions_custom.conf");
 	foreach($files as $file) {
 		if(file_exists($c->get('ASTETCDIR')."/".$file)) {
-			$exploited = true;
 			print "Moving potentially compromised file ".$c->get('ASTETCDIR')."/".$file." to ".$quarantine."/".$file."\n";
 			copy($c->get('ASTETCDIR')."/".$file,$quarantine."/".$file);
 			unlink($c->get('ASTETCDIR')."/".$file);
