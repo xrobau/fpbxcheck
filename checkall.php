@@ -26,7 +26,7 @@ if (!file_exists($quarantine)) {
 }
 
 print "Attempting to upgrade Framework\n";
-system("amportal a ma upgrade framework");
+system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
 
 print "Now Checking Framework...\n";
 $sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
@@ -82,7 +82,7 @@ if(file_exists($fw_ari_path)) {
 $fw_ari = $db->query("SELECT * FROM modules WHERE modulename = 'fw_ari' and enabled = 1")->fetchAll();
 if(!empty($fw_ari)) {
 	print "FreePBX ARI Framework detected as installed, attempting to update\n";
-	system("amportal a ma upgrade fw_ari");
+	system($c->get('AMPBIN')."/module_admin -f --no-warnings update fw_ari");
 } else {
 	//ari is disabled but check and remove the directory as well
 	if(file_exists($c->get('AMPWEBROOT')."/recordings/index.php")) {
@@ -121,8 +121,7 @@ foreach ($allmods as $modarr) {
 	$sig = $c->get('AMPWEBROOT')."/admin/modules/$mod/module.sig";
 	if (!file_exists($sig) && $redownload) {
 		print "UNSIGNED MODULE $mod -- attempting to redownload\n";
-		system("amportal a ma download $mod");
-		system("amportal a ma install $mod");
+		system($c->get('AMPBIN')."/module_admin -f --no-warnings update ".$mod);
 	}
 	if (!file_exists($sig)) {
 		print "UNSIGNED MODULE $mod: This module isn't signed. It may be altered, and should be re-downloaded immediately.\n";
