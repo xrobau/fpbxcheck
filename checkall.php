@@ -59,7 +59,7 @@ foreach($files as $file) {
 		touch($c->get('ASTETCDIR')."/".$file);
 	}
 }
-print "Potential Cleaned. Please check your system for any suspicious activity. This script might not have removed it all!\n";
+print "Cleaned potential exploit. Please check your system for any suspicious activity. This script might not have removed it all!\n";
 
 
 print "OK\n";
