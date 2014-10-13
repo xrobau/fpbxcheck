@@ -25,6 +25,8 @@ if (!file_exists($quarantine)) {
 	mkdir($quarantine);
 }
 
+system("amportal a ma upgrade framework");
+
 print "Checking framework...";
 $sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
 if (!file_exists($sig)) {
