@@ -5,7 +5,7 @@ $files = array("loader.php", "moddetails.php", "checkall.php", "GPG.class.php", 
 $files[] = "86CE877469D2EAD9.key";
 $files[] = "9F9169F4B33B4659.key";
 
-$outfile = "sigcheck.phar";
+$outfile = "fpbxseccheck.phar";
 $srcRoot = "src";
 
 @unlink($outfile);

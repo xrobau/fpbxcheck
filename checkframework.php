@@ -39,6 +39,10 @@ function checkFramework($hashes) {
 }
 
 function validate($file, $hash) {
+	if (!file_exists($file)) {
+		print "File ($file) is missing!\n";
+		return false;
+	}
 	if (hash_file('sha256', $file) != $hash) {
 		print "Mismatch on $file\n";
 	}

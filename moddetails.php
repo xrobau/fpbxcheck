@@ -1,6 +1,6 @@
 <?php
 
-$mod = $argv[1];
+$mod = isset($options['module']) ? $options['module'] : $options['m'];
 echo "Checking module $mod...\n";
 $c = new GetConf();
 $gpg = new GPG($c);

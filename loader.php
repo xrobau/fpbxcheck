@@ -3,14 +3,19 @@ include 'GPG.class.php';
 include 'GetConf.class.php';
 include 'checkframework.php';
 
-if (isset($argv[1]) && substr($argv[1],0,12) == "--redownload") {
-	$redownload = true;
-	array_shift($argv);
-} else {
-	$redownload = false;
-}
+$shortopts  = "m:cr";
 
-if (isset($argv[1])) {
+$longopts  = array(
+	"module:",
+	"redownload",
+	"clean"
+);
+$options = getopt($shortopts, $longopts);
+
+$redownload = isset($options['redownload']) ? true : false;
+$clean = isset($options['clean']) ? true : false;
+
+if (isset($options['module']) || isset($options['m'])) {
 	include 'moddetails.php';
 } else {
 	include 'checkall.php';
