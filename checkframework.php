@@ -39,8 +39,10 @@ function checkFramework($hashes) {
 }
 
 function validate($file, $hash) {
-	if (!file_exists($file) && $file != "/var/lib/asterisk/bin/amportal") {
-		print "File ($file) is missing!\n";
+	if (!file_exists($file)) {
+		if($file != "/var/lib/asterisk/bin/amportal") {
+			print "File ($file) is missing!\n";
+		}
 		return false;
 	}
 	if (hash_file('sha256', $file) != $hash) {
