@@ -25,7 +25,7 @@ Basic Usage:
     ./fpbxseccheck.phar
 This will tell you if any modules have invalid files or modified files, you can then redownload said modules manually or run the commands below
     
-Automatically attempting to clean up a compromised system
+Automatically attempt to clean up a compromised system
 
     ./fpbxseccheck.phar --clean
     
