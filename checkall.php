@@ -72,9 +72,9 @@ if(!empty($fw_ari)) {
 } else {
 	//ari is disabled but check and remove the directory as well
 	if(file_exists($c->get('AMPWEBROOT')."/recordings/index.php")) {
-		print "FreePBX ARI Framework is uninstalled but the folder exists, removing it\n";
 		$contents = file_get_contents($c->get('AMPWEBROOT')."/recordings/index.php");
-		if(!preg_match("/Location: \.\.\/ucp/",$contents)) {
+		if(!preg_match("/Location:(.*)ucp/i",$contents)) {
+			print "FreePBX ARI Framework is uninstalled but the folder exists, removing it\n";
 			system("rm -Rf ".$c->get('AMPWEBROOT')."/recordings");
 		}
 	}
