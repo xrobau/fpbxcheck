@@ -21,6 +21,10 @@ $othermods = 0;
 $exploited = false;
 $quarantine = sys_get_temp_dir()."/freepbx_quarantine";
 
+if (!file_exists($quarantine)) {
+	mkdir($quarantine);
+}
+
 print "Checking framework...";
 $sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
 if (!file_exists($sig)) {

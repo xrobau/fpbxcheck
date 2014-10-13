@@ -12,8 +12,8 @@ $longopts  = array(
 );
 $options = getopt($shortopts, $longopts);
 
-$redownload = isset($options['redownload']) ? true : false;
-$clean = isset($options['clean']) ? true : false;
+$redownload = isset($options['redownload']) || isset($options['r']) ? true : false;
+$clean = isset($options['clean']) || isset($options['c']) ? true : false;
 
 if (isset($options['module']) || isset($options['m'])) {
 	include 'moddetails.php';
