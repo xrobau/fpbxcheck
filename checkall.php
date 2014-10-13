@@ -29,6 +29,12 @@ if (!$gpg->verifyFile($sig)) {
 	print "ERROR! Framework signature file altered.\n\tYOU MAY HAVE BEEN HACKED.\n";
 	exit(-1);
 }
+
+if (file_exists("/var/www/html/admin/bootstrap.inc.php")) {
+	print "ERROR! Known bad file /var/www/html/admin/bootstrap.inc.php file exists!\n";
+	print "It's possible that your machine has been hacked. Remove this file urgently!\n";
+	exit(-1);
+}
 print "OK\n";
 
 $out = $gpg->checkSig($sig);
