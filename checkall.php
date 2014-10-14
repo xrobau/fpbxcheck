@@ -19,6 +19,7 @@ $goodmods = 0;
 $badmods = 0;
 $othermods = 0;
 $exploited = false;
+$admin = false;
 $quarantine = sys_get_temp_dir()."/freepbx_quarantine";
 
 if (!file_exists($quarantine)) {
@@ -66,6 +67,24 @@ if($clean) {
 	$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
 	$db->query($sql);
 	print "\tDeleting 'mgknight' user, if exists..\n";
+
+	$admins = $db->query('SELECT * FROM `ampusers` WHERE `sections` = "*"')->fetchAll();
+	if(count($admins) < 1) {
+		print "\tNo Admin Users detected. Adding one now.\n";
+		$pass = openssl_random_pseudo_bytes(32);
+		$sha1 = sha1($pass);
+		$sql = "INSERT INTO ampusers (`username`, `password_sha1`, `sections`) VALUES ('admin','".$sha1."','*')";
+		$db->query($sql);
+		$admin['pass'] = $pass;
+	}
+
+	print "\tPurging PHP Session storage\n";
+	foreach(glob(session_save_path()."/sess_*") as $session) {
+		if(!unlink($session)) {
+			print "\t*** UNABLE TO PURGE SESSIONS IN ".session_save_path()."\n";
+		}
+	}
+	print "\tDone\n";
 
 	$files = array("manager_custom.conf", "sip_custom.conf","extensions_custom.conf");
 	foreach($files as $file) {
@@ -189,4 +208,7 @@ if($exploited) {
 	print "**** SYSTEM WAS EXPLOITED ****\n";
 }
 print "Re-run this script with -m <rawmodname> for further information\nExample: -m ucp\n";
+if($admin !== false) {
+	print "Added new admin user called 'admin' with password '".$admin['pass']."'";
+}
 exit;
