@@ -66,7 +66,7 @@ if($clean) {
 	$output->writeln("\tPurging PHP Session storage");
 	foreach(glob(session_save_path()."/sess_*") as $session) {
 		if(!unlink($session)) {
-			print "\t*** UNABLE TO PURGE SESSIONS IN ".session_save_path()."\n";
+			$output->writeln("<error>\t*** UNABLE TO PURGE SESSION $session ***</error>");
 		}
 	}
 	$output->writeln("\tDone");
