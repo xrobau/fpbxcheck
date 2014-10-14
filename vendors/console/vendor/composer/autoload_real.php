@@ -54,7 +54,7 @@ class ComposerAutoloaderInitc826943703346d4f42341d7338c7c891
                 continue;
             }
             $path = $dir . implode('/', array_slice(explode('\\', $class), 3)).'.php';
-            if (!$path = stream_resolve_include_path($path)) {
+            if (!file_exists($path)) {
                 return false;
             }
             require $path;
