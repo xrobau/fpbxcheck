@@ -54,7 +54,7 @@ class CheckFramework {
 				exit(-1);
 			}
 		}
-		if (!$this->gpg->verifyFile($sig)) {
+		if (!$this->gpg->verifyFile($this->sig)) {
 			if ($abort) {
 				$this->output->writeln("<error>ERROR! Unable to successfully install framework.</error>");
 				exit(-1);
@@ -78,8 +78,13 @@ class CheckFramework {
 	public function checkFrameworkFiles() {
 		$this->output->writeln("Now Verifying all FreePBX Framework Files");
 		$out = $this->gpg->checkSig($this->sig);
-		$status = checkFramework($out['hashes'],$c,$output);
 		$hashes = $out['hashes'];
+
+		$agidir = $this->agidir;
+		$sbindir = $this->sbindir;
+		$bindir = $this->bindir;
+		$webroot = $this->webroot;
+
 		foreach ($hashes as $file => $hash) {
 			if ($this->skipFile($file)) {
 				continue;
