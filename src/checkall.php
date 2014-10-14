@@ -12,8 +12,9 @@ if($redownload) {
 $c = new GetConf();
 
 $gpg = new GPG($c);
-
 $gpg->trustFreePBX();
+
+$framework = CheckFramework($clean);
 
 // Steal GetConf's DB connection
 $db = $c->db;
@@ -33,31 +34,7 @@ if (!file_exists($quarantine)) {
 	mkdir($quarantine);
 }
 
-$output->writeln('Checking Framework for a valid signature...');
-$sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
-if (!file_exists($sig)) {
-	$output->writeln("<comment>Framework is missing it's sig file, Attempting to upgrade Framework</comment>");
-	system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-	$output->writeln("Finished upgrading Framework!! Checking for signature again");
-	if (!file_exists($sig)) {
-		$output->writeln("<error>ERROR! Framework isn't signed. Can't continue.</error>");
-		exit(-1);
-	}
-}
-if (!$gpg->verifyFile($sig)) {
-	$output->writeln("<error>ERROR! Framework signature file altered");
-	$output->writeln("<error>YOU MAY HAVE BEEN HACKED.</error>");
-	if($clean) {
-		$output->writeln("<comment>Framework has been tampered with, upgrading Framework</comment>");
-		system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-		$output->writeln("<info>Finished upgrading Framework!!</info>");
-	} else {
-		$output->writeln("<info>Please run with the --clean command</info>");
-		exit(-1);
-	}
-} else {
-	$output->writeln("<info>Framework appears to be good</info>");
-}
+$framework->checkSig();
 
 if(!$clean && file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
 	$exploited = true;
@@ -139,13 +116,13 @@ if(!empty($fw_ari)) {
 }
 $output->writeln("Finished with FreePBX ARI Framework");
 
-$out = $gpg->checkSig($sig);
-$output->writeln("Now Verifying all FreePBX Framework Files");
-$status = checkFramework($out['hashes'],$c,$output);
+$status = $framework->checkFrameworkFiles();
+
 if(!$status && $clean) {
-	$output->writeln("<error>Framework has been tampered with, upgrading Framework</error>");
-	system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-	$output->writeln("Finished upgrading Framework!!");
+	$output->writeln("<error>Framework file(s) have been modified, re-downloading<error>");
+	$framework->redownloadFramework();
+	$output->writeln("Finished upgrading Framework! Please re-run the check.");
+	exit(-1);
 } elseif(!$status && !$clean) {
 	$output->writeln("<fire>Framework has been tampered with</fire>");;
 	$output->writeln("<info>Please run with the --clean command</info>");
