@@ -221,6 +221,6 @@ if($exploited) {
 }
 $output->writeln("Re-run this script with -m <rawmodname> for further information\nExample: -m ucp");
 if($admin !== false) {
-	$output->writeln("<info>Added new admin user called 'admin' with password '".$admin['pass']."'</info>");
+	$output->writeln("<info>Admin user created with random password for security with password '".$admin['pass']."'</info>");
 }
 exit;
