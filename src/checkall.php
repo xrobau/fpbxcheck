@@ -124,8 +124,8 @@ if(!$status && $clean) {
 	$output->writeln("Finished upgrading Framework! Please re-run the check.");
 	exit(-1);
 } elseif(!$status && !$clean) {
-	$output->writeln("<fire>Framework has been tampered with</fire>");;
-	$output->writeln("<info>Please run with the --clean command</info>");
+	$output->writeln("<fire>Framework has been unexpectedly modified.</fire>");;
+	$output->writeln("<info>Please re-run with the --clean command to automatically repair</info>");
 	exit(-1);
 
 }
