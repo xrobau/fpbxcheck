@@ -79,7 +79,7 @@ if($clean) {
 	$admins = $db->query('SELECT * FROM `ampusers` WHERE `sections` = "*"')->fetchAll();
 	if(count($admins) < 1) {
 		$output->writeln("\tNo Admin Users detected. Adding one now.");
-		$pass = openssl_random_pseudo_bytes(32);
+		$pass = substr(hash('sha256', openssl_random_pseudo_bytes(32), 0, 16));
 		$sha1 = sha1($pass);
 		$sql = "INSERT INTO ampusers (`username`, `password_sha1`, `sections`) VALUES ('admin','".$sha1."','*')";
 		$db->query($sql);
