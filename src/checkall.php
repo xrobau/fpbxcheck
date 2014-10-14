@@ -14,7 +14,7 @@ $c = new GetConf();
 $gpg = new GPG($c);
 $gpg->trustFreePBX();
 
-$framework = CheckFramework($clean);
+$framework = new CheckFramework($clean, $output);
 
 // Steal GetConf's DB connection
 $db = $c->db;

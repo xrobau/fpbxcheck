@@ -39,7 +39,7 @@ class FreePBXCheckerCommand extends Command {
 		$path = dirname(__DIR__);
 		include $path.'/GPG.class.php';
 		include $path.'/GetConf.class.php';
-		include $path.'/checkframework.php';
+		include $path.'/CheckFramework.class.php';
 
 		if ($input->getOption('module')) {
 			$mod = $input->getOption('module');

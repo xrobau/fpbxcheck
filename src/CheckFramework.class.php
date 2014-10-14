@@ -14,7 +14,7 @@ class CheckFramework {
 	private $c;
 	private $gpg;
 
-	public function __construct($repair = false) {
+	public function __construct($repair = false, $output) {
 		$c = new  GetConf(); 
 		$this->webroot = $c->get('AMPWEBROOT');
 		$this->agidir = $c->get('ASTAGIDIR');
@@ -24,6 +24,7 @@ class CheckFramework {
 		$this->gpg = new GPG($c);
 
 		$this->repair = $repair;
+		$this->output = $output;
 	}
 
 	private function skipFile($file) {
@@ -37,45 +38,45 @@ class CheckFramework {
 	}
 
 	public function redownloadFramework() {
-		$output->writeln("<warn>Downloading Framework</warn>");
+		$this->output->writeln("<warn>Downloading Framework</warn>");
 		system($this->bindir."/module_admin -f --no-warnings update framework");
-		$output->writeln("<info>Download complete</info>");
+		$this->output->writeln("<info>Download complete</info>");
 	}
 
 	public function checkSig($abort = false) {
-		$output->writeln('Checking Framework for a valid signature...');
+		$this->output->writeln('Checking Framework for a valid signature...');
 		if (!file_exists($this->sig)) {
-			$output->writeln("<error>Framework is unsigned!</error>");
+			$this->output->writeln("<error>Framework is unsigned!</error>");
 			$this->redownloadFramework();
-			$output->writeln("<info>Checking signature again.</info>");
+			$this->output->writeln("<info>Checking signature again.</info>");
 			if (!file_exists($this->sig)) {
-				$output->writeln("<error>ERROR! Framework STILL isn't signed. Can't continue.</error>");
+				$this->output->writeln("<error>ERROR! Framework STILL isn't signed. Can't continue.</error>");
 				exit(-1);
 			}
 		}
 		if (!$this->gpg->verifyFile($sig)) {
 			if ($abort) {
-				$output->writeln("<error>ERROR! Unable to successfully install framework.</error>");
+				$this->output->writeln("<error>ERROR! Unable to successfully install framework.</error>");
 				exit(-1);
 			}
-			$output->writeln("<error>ERROR! Framework signature file altered</error>");
-			$output->writeln("<error>YOU MAY HAVE BEEN HACKED.</error>");
+			$this->output->writeln("<error>ERROR! Framework signature file altered</error>");
+			$this->output->writeln("<error>YOU MAY HAVE BEEN HACKED.</error>");
 			if($this->repair) {
 				$this->redownloadFramework();
-				$output->writeln("<info>Checking signature again.</info>");
+				$this->output->writeln("<info>Checking signature again.</info>");
 				return $this->checkSig(true);
 			} else {
-				$output->writeln("<info>Please run with the --clean command</info>");
+				$this->output->writeln("<info>Please run with the --clean command</info>");
 				exit(-1);
 			}
 		} else {
-			$output->writeln("<info>Framework appears to be good</info>");
+			$this->output->writeln("<info>Framework appears to be good</info>");
 			return true;
 		}
 	}
 
 	public function checkFrameworkFiles() {
-		$output->writeln("Now Verifying all FreePBX Framework Files");
+		$this->output->writeln("Now Verifying all FreePBX Framework Files");
 		$out = $this->gpg->checkSig($this->sig);
 		$status = checkFramework($out['hashes'],$c,$output);
 		$hashes = $out['hashes'];
@@ -86,7 +87,7 @@ class CheckFramework {
 			if (substr($file,0,17) == "amp_conf/agi-bin/") {
 				$s = $this->validate("$agidir/".substr($file,17), $hash, $output);
 				if(!$s) {
-					$output->writeln("<error>$agidir/".substr($file,17)." has been modified!</error>");
+					$this->output->writeln("<error>$agidir/".substr($file,17)." has been modified!</error>");
 					$status = false;
 				}
 				continue;
@@ -94,7 +95,7 @@ class CheckFramework {
 			if (substr($file,0,14) == "amp_conf/sbin/") {
 				$s = $this->validate("$sbindir/".substr($file,14), $hash, $output);
 				if(!$s) {
-					$output->writeln("<error>$sbindir/".substr($file,14)." has been modified!</error>");
+					$this->output->writeln("<error>$sbindir/".substr($file,14)." has been modified!</error>");
 					$status = false;
 				}
 				continue;
@@ -103,7 +104,7 @@ class CheckFramework {
 				if($file != "amp_conf/bin/amportal") {
 					$s = $this->validate("$bindir/".substr($file,13), $hash, $output);
 					if(!$s) {
-						$output->writeln("<error>$bindir/".substr($file,13)." has been modified!</error>");
+						$this->output->writeln("<error>$bindir/".substr($file,13)." has been modified!</error>");
 						$status = false;
 					}
 				}
@@ -112,7 +113,7 @@ class CheckFramework {
 			if (substr($file,0,16) == "amp_conf/htdocs/") {
 				$s = $this->validate("$webroot/".substr($file,16), $hash, $output);
 				if(!$s) {
-					$output->writeln("<error>$webroot/".substr($file,16)." has been modified!</error>");
+					$this->output->writeln("<error>$webroot/".substr($file,16)." has been modified!</error>");
 					$status = false;
 				}
 				continue;
@@ -122,7 +123,7 @@ class CheckFramework {
 				// Part of the root of the module
 				$s = $this->validate("$webroot/admin/modules/framework/$file", $hash, $output);
 				if(!$s) {
-					$output->writeln("<error>$webroot/admin/modules/framework/$file has been modified!</error>");
+					$this->output->writeln("<error>$webroot/admin/modules/framework/$file has been modified!</error>");
 					$status = false;
 				}
 				continue;
@@ -133,11 +134,11 @@ class CheckFramework {
 
 	public function validate($file, $hash,$output) {
 		if (!file_exists($file)) {
-			$output->writeln("<error>*** File ($file) is missing! ****</error>");
+			$this->output->writeln("<error>*** File ($file) is missing! ****</error>");
 			return false;
 		}
 		if (hash_file('sha256', $file) != $hash) {
-			$output->writeln("<error>*** Mismatch on $file ****</error>");
+			$this->output->writeln("<error>*** Mismatch on $file ****</error>");
 			return false;
 		}
 		return true;
