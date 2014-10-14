@@ -85,6 +85,8 @@ class CheckFramework {
 		$bindir = $this->bindir;
 		$webroot = $this->webroot;
 
+		$status = true;
+
 		foreach ($hashes as $file => $hash) {
 			if ($this->skipFile($file)) {
 				continue;
