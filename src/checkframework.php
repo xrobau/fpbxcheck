@@ -1,6 +1,6 @@
 <?php
 
-function checkFramework($hashes, $c) {
+function checkFramework($hashes, $c,$output) {
 	$webroot = $c->get('AMPWEBROOT');
 	$agidir = $c->get('ASTAGIDIR');
 	$sbindir = $c->get('AMPSBIN');
@@ -13,35 +13,35 @@ function checkFramework($hashes, $c) {
 			continue;
 		}
 		if (substr($file,0,17) == "amp_conf/agi-bin/") {
-			$s = validate("$agidir/".substr($file,17), $hash);
+			$s = validate("$agidir/".substr($file,17), $hash, $output);
 			if(!$s) {
-				print "$agidir/".substr($file,17)." has been modified!\n";
+				$output->writeln("<error>$agidir/".substr($file,17)." has been modified!</error>");
 				$status = false;
 			}
 			continue;
 		}
 		if (substr($file,0,14) == "amp_conf/sbin/") {
-			$s = validate("$sbindir/".substr($file,14), $hash);
+			$s = validate("$sbindir/".substr($file,14), $hash, $output);
 			if(!$s) {
-				print "$sbindir/".substr($file,14)." has been modified!\n";
+				$output->writeln("<error>$sbindir/".substr($file,14)." has been modified!</error>");
 				$status = false;
 			}
 			continue;
 		}
 		if (substr($file,0,13) == "amp_conf/bin/") {
 			if($file != "amp_conf/bin/amportal") {
-				$s = validate("$bindir/".substr($file,13), $hash);
+				$s = validate("$bindir/".substr($file,13), $hash, $output);
 				if(!$s) {
-					print "$bindir/".substr($file,13)." has been modified!\n";
+					$output->writeln("<error>$bindir/".substr($file,13)." has been modified!</error>");
 					$status = false;
 				}
 			}
 			continue;
 		}
 		if (substr($file,0,16) == "amp_conf/htdocs/") {
-			$s = validate("$webroot/".substr($file,16), $hash);
+			$s = validate("$webroot/".substr($file,16), $hash, $output);
 			if(!$s) {
-				print "$webroot/".substr($file,16)." has been modified!\n";
+				$output->writeln("<error>$webroot/".substr($file,16)." has been modified!</error>");
 				$status = false;
 			}
 			continue;
@@ -49,9 +49,9 @@ function checkFramework($hashes, $c) {
 
 		if (strpos($file, "/") === false || substr($file,0,4) == "SQL/") {
 			// Part of the root of the module
-			$s = validate("$webroot/admin/modules/framework/$file", $hash);
+			$s = validate("$webroot/admin/modules/framework/$file", $hash, $output);
 			if(!$s) {
-				print "$webroot/admin/modules/framework/$file has been modified!\n";
+				$output->writeln("<error>$webroot/admin/modules/framework/$file has been modified!</error>");
 				$status = false;
 			}
 			continue;
@@ -60,13 +60,13 @@ function checkFramework($hashes, $c) {
 	return $status;
 }
 
-function validate($file, $hash) {
+function validate($file, $hash,$output) {
 	if (!file_exists($file)) {
-		print "*** File ($file) is missing! ****\n";
+		$output->writeln("<error>*** File ($file) is missing! ****</error>");
 		return false;
 	}
 	if (hash_file('sha256', $file) != $hash) {
-		print "*** Mismatch on $file ****\n";
+		$output->writeln("<error>*** Mismatch on $file ****</error>");
 		return false;
 	}
 	return true;

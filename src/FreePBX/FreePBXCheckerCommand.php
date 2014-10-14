@@ -33,14 +33,20 @@ class FreePBXCheckerCommand extends Command {
 			);
 	}
 	protected function execute(InputInterface $input, OutputInterface $output) {
+		$style = new OutputFormatterStyle('white', 'red', array('bold', 'blink'));
+		$output->getFormatter()->setStyle('fire', $style);
+
 		$path = dirname(__DIR__);
 		include $path.'/GPG.class.php';
 		include $path.'/GetConf.class.php';
 		include $path.'/checkframework.php';
 
 		if ($input->getOption('module')) {
+			$mod = $input->getOption('module');
 			include $path.'/moddetails.php';
 		} else {
+			$clean = $input->getOption('clean');
+			$redownload = $input->getOption('redownload');
 			include $path.'/checkall.php';
 		}
 
