@@ -30,9 +30,17 @@ class FreePBXCheckerCommand extends Command {
 			'm',
 			InputOption::VALUE_REQUIRED,
 			'Check an Individual Module'
+			)
+			->addOption(
+			'nagios',
+			'a',
+			InputOption::VALUE_NONE,
+			'Run as a nagios script'
 			);
 	}
 	protected function execute(InputInterface $input, OutputInterface $output) {
+		global $nagios;
+
 		$style = new OutputFormatterStyle('white', 'red', array('bold', 'blink'));
 		$output->getFormatter()->setStyle('fire', $style);
 
@@ -40,6 +48,12 @@ class FreePBXCheckerCommand extends Command {
 		include $path.'/GPG.class.php';
 		include $path.'/GetConf.class.php';
 		include $path.'/CheckFramework.class.php';
+
+		if ($input->getOption('nagios')) {
+			// Mute everything. 
+			$output->setVerbosity(Outputinterface::VERBOSITY_QUIET);
+			$nagios = true;
+		}
 
 		if ($input->getOption('module')) {
 			$mod = $input->getOption('module');

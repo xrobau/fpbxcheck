@@ -1,4 +1,7 @@
 <?php
+
+global $nagios; // Set in src/FreePBX/FreePBXCheckerCommand.php
+
 $output->writeln('Starting integrity check...');
 
 if($clean) {
@@ -36,9 +39,34 @@ if (!file_exists($quarantine)) {
 
 $framework->checkSig();
 
-if(!$clean && file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
+if(file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
 	$exploited = true;
-	$output->writeln("<error>*** Exploit 'mgknight' Detected, Please run with the --clean option! ***</error>");
+	$output->writeln("<error>*** Exploit 'mgknight' Detected ***</error>");
+	if ($nagios) {
+		// Critical error.
+		// For nagios, use 'print', for everything else, use $output.
+		print "Attack Detected! Machine is compromised! Known Exploit CVE-2014-7235 'mgknight'\n";
+		exit(2);
+	}
+	if (!$clean) {
+		$output->writeln("<error>To fix this automatically, re-run this script with --clean</error>");
+	}
+}
+
+// Check for mgknight user
+$admins = $db->query('SELECT * FROM `ampusers` WHERE `username` = "mgknight"')->fetchAll();
+if(count($admins) != 0) {
+	$output->writeln("<error>mgknight user detected!</error>");
+	if ($nagios) {
+		// Warning
+		print "Known bad user 'mgknight' detacted\n";
+		exit(1);
+	}
+	if ($clean) {
+		$output->writeln("\t<info>Deleting 'mgknight' user.</info>");
+		$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
+		$db->query($sql);
+	}
 }
 
 if($clean) {
@@ -49,14 +77,10 @@ if($clean) {
 		unlink($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php");
 	}
 
-	$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
-	$db->query($sql);
-	$output->writeln("\tDeleting 'mgknight' user, if exists..");
-
 	$admins = $db->query('SELECT * FROM `ampusers` WHERE `sections` = "*"')->fetchAll();
 	if(count($admins) < 1) {
 		$output->writeln("\tNo Admin Users detected. Adding one now.");
-		$pass = openssl_random_pseudo_bytes(32);
+		$pass = substr(hash('sha256', openssl_random_pseudo_bytes(32)), 0, 16);
 		$sha1 = sha1($pass);
 		$sql = "INSERT INTO ampusers (`username`, `password_sha1`, `sections`) VALUES ('admin','".$sha1."','*')";
 		$db->query($sql);
@@ -89,6 +113,10 @@ if(file_exists($fw_ari_path)) {
 	exec("grep -R 'unserialize' ".$fw_ari_path, $o, $r);
 	if(empty($r)) {
 		$output->writeln("<error>\t*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***</error>");
+		if ($nagios) {
+			print "ARI Vulnerable to CVE-2014-7235!\n";
+			exit(2);
+		}
 		if($clean) {
 			$output->writeln("<comment>\tARI IS VULNERABLE, MOVIING TO ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari</comment>");
 			system("cp -R ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari");

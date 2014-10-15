@@ -38,12 +38,21 @@ class CheckFramework {
 	}
 
 	public function redownloadFramework() {
-		$this->output->writeln("<warn>Downloading Framework</warn>");
+		global $nagios;
+
+		if ($nagios) {
+			print "Critical Framework error. Please run fpbxcheck on this machine\n";
+			exit(2);
+		}
+
+		$this->output->writeln("<comment>Downloading Framework</comment>");
 		system($this->bindir."/module_admin -f --no-warnings update framework");
-		$this->output->writeln("<info>Download complete</info>");
+		$this->output->writeln("<comment>Download complete</comment>");
 	}
 
 	public function checkSig($abort = false) {
+		global $nagios;
+
 		$this->output->writeln('Checking Framework for a valid signature...');
 		if (!file_exists($this->sig)) {
 			$this->output->writeln("<error>Framework is unsigned!</error>");
@@ -61,6 +70,10 @@ class CheckFramework {
 			}
 			$this->output->writeln("<error>ERROR! Framework signature file altered</error>");
 			$this->output->writeln("<error>YOU MAY HAVE BEEN HACKED.</error>");
+			if ($nagios) {
+				print "Framework signature file tampered. This machine is most likely under attack\n";
+				exit(2);
+			}
 			if($this->repair) {
 				$this->redownloadFramework();
 				$this->output->writeln("<info>Checking signature again.</info>");
@@ -76,6 +89,8 @@ class CheckFramework {
 	}
 
 	public function checkFrameworkFiles() {
+		global $nagios;
+
 		$this->output->writeln("Now Verifying all FreePBX Framework Files");
 		$out = $this->gpg->checkSig($this->sig);
 		$hashes = $out['hashes'];
@@ -86,6 +101,7 @@ class CheckFramework {
 		$webroot = $this->webroot;
 
 		$status = true;
+		$count = 0;
 
 		foreach ($hashes as $file => $hash) {
 			if ($this->skipFile($file)) {
@@ -96,6 +112,7 @@ class CheckFramework {
 				if(!$s) {
 					$this->output->writeln("<error>$agidir/".substr($file,17)." has been modified!</error>");
 					$status = false;
+					$count++;
 				}
 				continue;
 			}
@@ -104,6 +121,7 @@ class CheckFramework {
 				if(!$s) {
 					$this->output->writeln("<error>$sbindir/".substr($file,14)." has been modified!</error>");
 					$status = false;
+					$count++;
 				}
 				continue;
 			}
@@ -113,6 +131,7 @@ class CheckFramework {
 					if(!$s) {
 						$this->output->writeln("<error>$bindir/".substr($file,13)." has been modified!</error>");
 						$status = false;
+						$count++;
 					}
 				}
 				continue;
@@ -122,6 +141,7 @@ class CheckFramework {
 				if(!$s) {
 					$this->output->writeln("<error>$webroot/".substr($file,16)." has been modified!</error>");
 					$status = false;
+					$count++;
 				}
 				continue;
 			}
@@ -132,9 +152,15 @@ class CheckFramework {
 				if(!$s) {
 					$this->output->writeln("<error>$webroot/admin/modules/framework/$file has been modified!</error>");
 					$status = false;
+					$count++;
 				}
 				continue;
 			}
+		}
+
+		if (!$status && $nagios) {
+			print "Framework has detected $count modified files\n";
+			exit(2);
 		}
 		return $status;
 	}
