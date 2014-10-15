@@ -1,4 +1,7 @@
 <?php
+
+global $nagios; // Set in src/FreePBX/FreePBXCheckerCommand.php
+
 $output->writeln('Starting integrity check...');
 
 if($clean) {
@@ -12,8 +15,9 @@ if($redownload) {
 $c = new GetConf();
 
 $gpg = new GPG($c);
-
 $gpg->trustFreePBX();
+
+$framework = new CheckFramework($clean, $output);
 
 // Steal GetConf's DB connection
 $db = $c->db;
@@ -33,35 +37,36 @@ if (!file_exists($quarantine)) {
 	mkdir($quarantine);
 }
 
-$output->writeln('Checking Framework for a valid signature...');
-$sig = $c->get('AMPWEBROOT')."/admin/modules/framework/module.sig";
-if (!file_exists($sig)) {
-	$output->writeln("<comment>Framework is missing it's sig file, Attempting to upgrade Framework</comment>");
-	system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-	$output->writeln("Finished upgrading Framework!! Checking for signature again");
-	if (!file_exists($sig)) {
-		$output->writeln("<error>ERROR! Framework isn't signed. Can't continue.</error>");
-		exit(-1);
+$framework->checkSig();
+
+if(file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
+	$exploited = true;
+	$output->writeln("<error>*** Exploit 'mgknight' Detected ***</error>");
+	if ($nagios) {
+		// Critical error.
+		// For nagios, use 'print', for everything else, use $output.
+		print "Attack Detected! Machine is compromised! Known Exploit CVE-2014-7235 'mgknight'\n";
+		exit(2);
 	}
-}
-if (!$gpg->verifyFile($sig)) {
-	$output->writeln("<error>ERROR! Framework signature file altered");
-	$output->writeln("<error>YOU MAY HAVE BEEN HACKED.</error>");
-	if($clean) {
-		$output->writeln("<comment>Framework has been tampered with, upgrading Framework</comment>");
-		system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-		$output->writeln("<info>Finished upgrading Framework!!</info>");
-	} else {
-		$output->writeln("<info>Please run with the --clean command</info>");
-		exit(-1);
+	if (!$clean) {
+		$output->writeln("<error>To fix this automatically, re-run this script with --clean</error>");
 	}
-} else {
-	$output->writeln("<info>Framework appears to be good</info>");
 }
 
-if(!$clean && file_exists($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php")) {
-	$exploited = true;
-	$output->writeln("<error>*** Exploit 'mgknight' Detected, Please run with the --clean option! ***</error>");
+// Check for mgknight user
+$admins = $db->query('SELECT * FROM `ampusers` WHERE `username` = "mgknight"')->fetchAll();
+if(count($admins) != 0) {
+	$output->writeln("<error>mgknight user detected!</error>");
+	if ($nagios) {
+		// Warning
+		print "Known bad user 'mgknight' detacted\n";
+		exit(1);
+	}
+	if ($clean) {
+		$output->writeln("\t<info>Deleting 'mgknight' user.</info>");
+		$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
+		$db->query($sql);
+	}
 }
 
 if($clean) {
@@ -72,14 +77,10 @@ if($clean) {
 		unlink($c->get('AMPWEBROOT')."/admin/bootstrap.inc.php");
 	}
 
-	$sql = "DELETE FROM ampusers WHERE username = 'mgknight'";
-	$db->query($sql);
-	$output->writeln("\tDeleting 'mgknight' user, if exists..");
-
 	$admins = $db->query('SELECT * FROM `ampusers` WHERE `sections` = "*"')->fetchAll();
 	if(count($admins) < 1) {
 		$output->writeln("\tNo Admin Users detected. Adding one now.");
-		$pass = substr(hash('sha256', openssl_random_pseudo_bytes(32), 0, 16));
+		$pass = substr(hash('sha256', openssl_random_pseudo_bytes(32)), 0, 16);
 		$sha1 = sha1($pass);
 		$sql = "INSERT INTO ampusers (`username`, `password_sha1`, `sections`) VALUES ('admin','".$sha1."','*')";
 		$db->query($sql);
@@ -89,7 +90,7 @@ if($clean) {
 	$output->writeln("\tPurging PHP Session storage");
 	foreach(glob(session_save_path()."/sess_*") as $session) {
 		if(!unlink($session)) {
-			print "\t*** UNABLE TO PURGE SESSIONS IN ".session_save_path()."\n";
+			$output->writeln("<error>\t*** UNABLE TO PURGE SESSION $session ***</error>");
 		}
 	}
 	$output->writeln("\tDone");
@@ -112,6 +113,10 @@ if(file_exists($fw_ari_path)) {
 	exec("grep -R 'unserialize' ".$fw_ari_path, $o, $r);
 	if(empty($r)) {
 		$output->writeln("<error>\t*** FREEPBX ARI IS VULNERABLE ON THIS SYSTEM ***</error>");
+		if ($nagios) {
+			print "ARI Vulnerable to CVE-2014-7235!\n";
+			exit(2);
+		}
 		if($clean) {
 			$output->writeln("<comment>\tARI IS VULNERABLE, MOVIING TO ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari</comment>");
 			system("cp -R ".$c->get('AMPWEBROOT')."/recordings ".$quarantine."/fw_ari");
@@ -139,16 +144,16 @@ if(!empty($fw_ari)) {
 }
 $output->writeln("Finished with FreePBX ARI Framework");
 
-$out = $gpg->checkSig($sig);
-$output->writeln("Now Verifying all FreePBX Framework Files");
-$status = checkFramework($out['hashes'],$c,$output);
+$status = $framework->checkFrameworkFiles();
+
 if(!$status && $clean) {
-	$output->writeln("<error>Framework has been tampered with, upgrading Framework</error>");
-	system($c->get('AMPBIN')."/module_admin -f --no-warnings update framework");
-	$output->writeln("Finished upgrading Framework!!");
+	$output->writeln("<error>Framework file(s) have been modified, re-downloading<error>");
+	$framework->redownloadFramework();
+	$output->writeln("Finished upgrading Framework! Please re-run the check.");
+	exit(-1);
 } elseif(!$status && !$clean) {
-	$output->writeln("<fire>Framework has been tampered with</fire>");;
-	$output->writeln("<info>Please run with the --clean command</info>");
+	$output->writeln("<fire>Framework has been unexpectedly modified.</fire>");;
+	$output->writeln("<info>Please re-run with the --clean command to automatically repair</info>");
 	exit(-1);
 
 }
