@@ -104,6 +104,18 @@ if($clean) {
 			touch($c->get('ASTETCDIR')."/".$file);
 		}
 	}
+
+	$files = array("admin/images/index.php", "fop2/css/fluid/index.php");
+	foreach ($files as $file) {
+		if (file_exists($c->get('AMPWEBROOT') ."/".$file)) {
+			//rename the file
+			$qFile = str_replace("/","_", $file);
+			copy($c->get('AMPWEBROOT')."/".$file,$quarantine."/".$qFile);
+			unlink($c->get('AMPWEBROOT')."/".$file);
+			$output->writeln("\tMoving potentially compromised file ".$c->get('AMPWEBROOT')."/".$file." to ".$quarantine."/".$qFile);
+		}
+	}
+
 	$output->writeln("<info>Cleaned potential 'mgknight' exploit. Please check your system for any suspicious activity. This script might not have removed it all!</info>");
 }
 
