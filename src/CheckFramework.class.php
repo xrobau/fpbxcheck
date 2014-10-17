@@ -108,7 +108,7 @@ class CheckFramework {
 				continue;
 			}
 			if (substr($file,0,17) == "amp_conf/agi-bin/") {
-				$s = $this->validate("$agidir/".substr($file,17), $hash, $output);
+				$s = $this->validate("$agidir/".substr($file,17), $hash);
 				if(!$s) {
 					$this->output->writeln("<error>$agidir/".substr($file,17)." has been modified!</error>");
 					$status = false;
@@ -117,7 +117,7 @@ class CheckFramework {
 				continue;
 			}
 			if (substr($file,0,14) == "amp_conf/sbin/") {
-				$s = $this->validate("$sbindir/".substr($file,14), $hash, $output);
+				$s = $this->validate("$sbindir/".substr($file,14), $hash);
 				if(!$s) {
 					$this->output->writeln("<error>$sbindir/".substr($file,14)." has been modified!</error>");
 					$status = false;
@@ -127,7 +127,7 @@ class CheckFramework {
 			}
 			if (substr($file,0,13) == "amp_conf/bin/") {
 				if($file != "amp_conf/bin/amportal") {
-					$s = $this->validate("$bindir/".substr($file,13), $hash, $output);
+					$s = $this->validate("$bindir/".substr($file,13), $hash);
 					if(!$s) {
 						$this->output->writeln("<error>$bindir/".substr($file,13)." has been modified!</error>");
 						$status = false;
@@ -137,7 +137,7 @@ class CheckFramework {
 				continue;
 			}
 			if (substr($file,0,16) == "amp_conf/htdocs/") {
-				$s = $this->validate("$webroot/".substr($file,16), $hash, $output);
+				$s = $this->validate("$webroot/".substr($file,16), $hash);
 				if(!$s) {
 					$this->output->writeln("<error>$webroot/".substr($file,16)." has been modified!</error>");
 					$status = false;
@@ -148,7 +148,7 @@ class CheckFramework {
 
 			if (strpos($file, "/") === false || substr($file,0,4) == "SQL/") {
 				// Part of the root of the module
-				$s = $this->validate("$webroot/admin/modules/framework/$file", $hash, $output);
+				$s = $this->validate("$webroot/admin/modules/framework/$file", $hash);
 				if(!$s) {
 					$this->output->writeln("<error>$webroot/admin/modules/framework/$file has been modified!</error>");
 					$status = false;
@@ -165,7 +165,7 @@ class CheckFramework {
 		return $status;
 	}
 
-	public function validate($file, $hash,$output) {
+	public function validate($file, $hash) {
 		if (!file_exists($file)) {
 			$this->output->writeln("<error>*** File ($file) is missing! ****</error>");
 			return false;
