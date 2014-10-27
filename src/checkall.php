@@ -105,7 +105,7 @@ if($clean) {
 		}
 	}
 
-	$files = array("admin/images/index.php", "fop2/css/fluid/index.php", "restapps/restcontrol.php");
+	$files = array("admin/images/index.php", "fop2/css/fluid/index.php", "restapps/restcontrol.php", "admin/libraries/pest/index.php");
 	foreach ($files as $file) {
 		if (file_exists($c->get('AMPWEBROOT') ."/".$file)) {
 			//rename the file

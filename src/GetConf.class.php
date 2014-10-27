@@ -19,7 +19,7 @@ class GetConf {
         private function parseConf($file) {
                 $f = file($file);
                 foreach ($f as $line) {
-			if (preg_match("/amp_conf\['(.+)'\].+'(.+)'/",$line, $out)) {
+			if (preg_match("/amp_conf\['(.+)'\].+['\"](.+)['\"]/",$line, $out)) {
 				self::$vars[$out[1]] = $out[2];
                         }
                 }
